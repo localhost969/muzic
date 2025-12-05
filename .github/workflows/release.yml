@@ -33,12 +33,13 @@ jobs:
       - name: Make gradlew executable
         run: chmod +x ./gradlew
 
-      - name: Optional: install Android SDK (minimal)
-        run: |
-          sudo apt-get update -y
-          sudo apt-get install -y wget unzip
-          # Some builds may not need android sdk installed in CI; this keeps the steps minimal
-        shell: bash
+      - name: Set up Android SDK
+        uses: r0adkll/setup-android@v2
+        with:
+          api-level: 33
+          components: |
+            build-tools;33.0.2
+            platform-tools
 
       - name: Setup optional keystore (if provided)
         if: ${{ secrets.KEYSTORE_BASE64 }}
