@@ -3,7 +3,7 @@ name: Build and release APK/AAB
 on:
   push:
     tags:
-      - '*'   
+      - '*'   # trigger on any tag
 
 jobs:
   build:
@@ -42,9 +42,9 @@ jobs:
             build-tools;33.0.2
             platform-tools
 
-   
+      # ---- OPTIONAL KEYSTORE SETUP ----
       - name: Setup optional keystore
-        if: ${{ secrets.KEYSTORE_BASE64 != '' }}
+        if: ${{ secrets.KEYSTORE_BASE64 != null }}
         env:
           KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
@@ -57,23 +57,22 @@ jobs:
           echo "keyAlias=$KEY_ALIAS" >> key.properties
           echo "keyPassword=$KEY_PASSWORD" >> key.properties
 
-    
+      # ---- BUILD APK/AAB ----
       - name: Build release / debug fallback
         run: |
           set -e
           ./gradlew --no-daemon assembleRelease bundleRelease || \
           ./gradlew --no-daemon assembleDebug bundleDebug
 
- 
+      # ---- COLLECT ARTIFACTS ----
       - name: Collect artifacts
         run: |
           mkdir -p release_artifacts
-          find app/build -type f \( -name "*.apk" -o -name "*.aab" \) -print0 | while IFS= read -r -d '' file; do
-            cp "$file" release_artifacts/
-          done
+          find app/build -type f \( -name "*.apk" -o -name "*.aab" \) -print0 | \
+          while IFS= read -r -d '' file; do cp "$file" release_artifacts/; done
 
-   
-      - name: Create GitHub Release and upload assets
+      # ---- PUBLISH RELEASE ----
+      - name: Create GitHub Release
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ github.ref_name }}
